@@ -1,0 +1,63 @@
+- Below are the commands you can run in order to download and install Grafana for Ubuntu 20.04.
+
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+
+sudo add-apt-repository "deb https://packages.grafana.com/enterpri... stable main"
+
+sudo apt update
+
+sudo apt install grafana
+
+sudo systemctl start grafana-server
+
+sudo systemctl status grafana-server
+
+sudo systemctl enable grafana-server
+
+
+- Download and installation commands for influxDB for Ubuntu 20.04
+
+wget -qO- https://repos.influxdata.com/influxdb... | sudo apt-key add -
+source /etc/lsb-release
+
+echo "deb https://repos.influxdata.com/debian $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+
+sudo apt-get update && sudo apt-get install influxdb
+
+sudo systemctl unmask influxdb.service
+
+sudo systemctl start influxdb
+
+influxd -config /etc/influxdb/influxdb.conf
+
+This video also shows you an example of how you can add data sources and attach them to Grafana. 
+
+- Below is the code which you can use for your python file.
+
+import pandas as pd  
+from influxdb import InfluxDBClient
+
+client= InfluxDBClient (host= "localhost",port=8086)
+client.switch_database("corona19")
+
+df=pd.read_csv("countries.csv.1")
+df.dropna(inplace=True)
+print (df.shape)
+
+for rwo_pk, row in df.iloc[1:].iterrows():
+
+ json_body=[{
+ "measurement": "CovidMap",
+ "tags": {"country":row[0]},
+ "fields": {
+ "name":row[0],
+ "country":row[1],
+ "latitude":row[2],
+ "longitude":row[3],
+ "metric":row[4],
+ 
+ }
+ }]
+ client.write_points(json_body)
+ print("done")
+ 
