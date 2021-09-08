@@ -24,3 +24,4 @@ services:
 #            }
 #        } 
 #    }  
+#def shellCmd = "bash ./server-cmds.sh" #${IMAGE_NAME}
