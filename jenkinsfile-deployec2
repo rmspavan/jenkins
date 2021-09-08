@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Build the code'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    def dockerCmd = 'docker run -p 8080:8080 -d rmspavan/webapp:latest'
+                    sshagent(['ec2-server-key']) #generate this in pipelinesystax
+                        sh "ssh -o StingHostKeyChecking=no ec2-user@3.170.12.64 ${dockerCmd}"
+                }
+                echo 'Deployed the App in EC2-docker'
+            }
+        }        
+    }
+}
