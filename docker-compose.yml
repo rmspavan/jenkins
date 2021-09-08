@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+    webapp:
+      image: rmspavan/webapp:1.0
+      ports:
+        - 8080:8080
+    postgres:
+      image: postgres:13
+      port:
+        - 5432:5432
+      environment:
+        - POSTGRES_PASSWORD=my-pwd    
+
+#adjust in jenkinsfile
+#        stage('Deploy') {
+#            steps {
+#                script {
+#                    echo 'deploying docker image to EC2...'
+#                    def dockerComposerCmd = "docker-compose -f docker-compose.yaml up --detach"
+#                    sshagent(['ec2-server-key']) {
+#                        sh "scp /root/docker/docker-compose.yml ec2-user@3.170.12.64:/home/ec2-user"
+#                        sh "ssh -o StingHostKeyChecking=no ec2-user@3.170.12.64 ${dockerComposerCmd}"
+#                }
+#            }
+#        } 
+#    }  
