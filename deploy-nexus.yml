@@ -1,0 +1,128 @@
+---
+- name : Install java and net-ttols
+  hosts: nodeaserver
+  tasks:
+    - name: update apt repo and cahce
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: Install Java 8
+      apt: name=openjdk-8-jre-headless
+    - name: Install net-tools
+      apt: name=net-tools
+
+- name: Download and unpack Nexus installer
+  host: nodeaserver
+  tasks:
+    - name: Check nexus folder stats
+      stat:
+        path: /opt/nexus
+      register: stat_result
+    - name: Download nexus
+      get_url: 
+        url: https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+        dest: /opt/
+      register: download_result
+    - name: Untar Nexus installer
+      unarchive:
+        # src: /opt/nexus-3.30.0-01-unix.tar.gz
+        src: "{{download_result.dest}}"
+        dest: /opt/
+        remote_src: yes
+      when: not stat_result.stat.exists
+    - name: Find nexus folder
+      find:
+        paths: /opt
+        patern: "nexus-*"
+        file_type: directory
+      register: find_result
+    #- debug: msg= {{find_result}}
+    - name: Check nexus folder stats
+      stat:
+        path: /opt/nexus
+      register: stat_result  
+    - name: Rename nexus folder
+      shell: mv {{find_result.files[0].path}} /opt/nexus
+      when:  not stat_result.stat.exists
+
+- name: Create nexus user and group
+  hosts: nodeaserver
+  tasks:
+    - name: Ensure group nexus exists
+      group:
+        name: nexus
+        state: present
+    - name: Create nexus user
+      user:
+        name: nexus
+        group: nexus
+    - name: Make nexus user owner of nexus folder
+      file: 
+        path: /opt/nexus
+        state: directory
+        owner: nexus
+        group: nexus
+        recurse: yes
+    - name: Make nexus user owner of nexus folder
+      file: 
+        path: /opt/sonatype-work
+        state: directory
+        owner: nexus
+        group: nexus
+        recurse: yes
+
+- name: Start nexus with nexus
+  hosts: nodeaserver
+  become: True
+  become_user: nexus
+  tasks:
+    - name: Set run_as_user nexus
+      # blockinfile:
+      #   path: /opt/nexus/bin/nexus.rc
+      #   block: |
+      #     run_as_user="nexus"
+      lineinfile:
+        path: /opt/nexus/bin/nexus.rc
+        regexp: '^#run_as_user=""'
+        line: run_as_user="nexus"
+    - name: Start nexus
+      command: /opt/nexus/bin/nexus start
+
+- name: Verify nexus running
+  hosts: nodeaserver
+  tasks:
+    - name: Check with ps
+      shell: ps aux | grep node
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}} 
+    - name: Wait one minute
+      pause:
+        minutes: 1   
+    - name: Check with netstat
+      shell: netstat -plnt
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}}
+        
+       
+
+# #nexus.sh
+
+# apt update
+# apt install openjdk-8-jre-headless
+# apt install net-tools
+
+# cd /opt
+# wget https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+# tar -zxvf latet-unix.tar.gz
+
+# adduser nexus
+# chown -R nexus:nexus nexus-3.28.1-01
+# chown -R nbexus:nexus sonatype-work
+
+# vim nexus-3.28.1-01/bin/nexus.rc
+# run_as_user="nexus"
+
+# su - nexus
+# /opt/nexus-3.28.1-01/bin/nexus start
+
+# ps aux | grep nexus
+# nestat -lnpt
+
